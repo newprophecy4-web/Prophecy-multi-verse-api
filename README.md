@@ -1,14 +1,12 @@
 # Moviebox Backend
 
-Backend-only REST API for a legal catalog and public-domain playback. The business layer remains provider-based and canonical-ID driven. Catalog storage can now be selected explicitly with `STORAGE_MODE=local` for local development or `STORAGE_MODE=firestore` for the Firebase project `kanri-bu`.
+Backend-only local-first catalog and legal playback-source service. Storage is selected explicitly: `STORAGE_MODE=local` for development or `STORAGE_MODE=firestore` for production Firebase Firestore.
 
-## Firebase architecture
+## Firebase project and secure server authentication
 
-The application uses the supplied Firebase Web configuration only as public project identity/configuration. It does not use Firebase Admin SDK, service-account JSON, private keys, or Firebase Storage. Secure server-side Firestore REST access requires a short-lived OAuth access token supplied at runtime as `FIRESTORE_ACCESS_TOKEN`; that token is never committed. If `STORAGE_MODE=firestore` is selected without that token, requests fail clearly with HTTP 503 rather than silently using local data.
+The public Firebase Web configuration identifies project `kanri-bu` and is not a privileged server credential. Production Firestore and Firebase ID-token verification use the official `firebase-admin` SDK with a runtime-only `FIREBASE_SERVICE_ACCOUNT_JSON` secret supplied by Render or another secret manager. The service-account JSON, private key, and credential value are never committed to GitHub. If Firestore mode is selected without this runtime secret, requests fail clearly with HTTP 503 and never silently fall back to local JSON.
 
-Firebase ID tokens are verified against Google's published secure-token signing keys using the `kanri-bu` project issuer and audience. Public catalog routes require no login. User routes require a verified Bearer token and use the UID from the verified token, never a client-supplied UID.
-
-## Local development
+## Start
 
 ```bash
 cp .env.example .env
@@ -18,7 +16,7 @@ pnpm run build
 pnpm run dev
 ```
 
-Default local mode uses `./data/catalog.json`. Sync real public-domain Internet Archive metadata with:
+Local mode uses `./data/catalog.json`. Sync legal Internet Archive metadata with:
 
 ```bash
 pnpm run sync:provider -- --item gov.archives.arc.49737
@@ -32,14 +30,14 @@ pnpm run sync:provider -- --item gov.archives.arc.49737
 - `GET /api/titles/:titleId`
 - `GET /api/titles/:titleId/seasons`
 - `GET /api/titles/:titleId/episodes`
-- `GET /api/titles/:titleId/sources`
-- `GET /api/titles/:titleId/playback`
 - `GET /api/episodes/:episodeId`
 - `GET /api/episodes/:episodeId/playback`
+- `GET /api/titles/:titleId/sources`
+- `GET /api/titles/:titleId/playback`
 - `GET /api/providers`
 - `GET /api/providers/:id/health`
 
-Equivalent `/api/v1` catalog routes remain available.
+Public catalog and playback routes require no login.
 
 ## Protected user API
 
@@ -48,14 +46,36 @@ Equivalent `/api/v1` catalog routes remain available.
 - `GET /api/user/history`
 - `GET /api/user/settings`
 
-Send `Authorization: Bearer <Firebase ID token>`. Missing, invalid, expired, or unverifiable tokens return HTTP 401. Firestore user reads/writes return HTTP 503 until a secure runtime access token is configured.
+Send `Authorization: Bearer <Firebase ID token>`. The backend verifies the token with Firebase Admin and uses only the verified UID for `/users/{uid}` access. Missing, invalid, or expired tokens return HTTP 401.
 
-## Configuration
+## Firestore collections
 
-Required local variables are `NODE_ENV`, `PORT`, `LOCAL_STORE_FILE`, `STORAGE_MODE`, `ADMIN_API_KEY`, `JWT_SECRET`, and `CORS_ORIGIN`. The `FIREBASE_*` values identify project `kanri-bu`; the Web API key is not treated as a privileged server credential. `FIRESTORE_ACCESS_TOKEN` must remain empty in the repository and may be supplied only through a secure deployment secret.
+The Firestore repository uses `/titles/{titleId}` for catalog records and `/users/{uid}` for user-specific data. Catalog writes remain backend-controlled; public catalog routes are read-only.
 
-No PostgreSQL, Redis, OpenSearch, BullMQ, Docker, Prisma, Firebase Admin SDK, service-account credential, or private key is used.
+## Render configuration
 
-## Verification status
+Use the existing Node build and start commands:
 
-Local JSON catalog, official Internet Archive sync, canonical ID consistency, legal MP4 playback, public no-login routes, and protected missing/invalid-token rejection are testable locally. Real Firestore read/write and a valid Firebase-user request remain **BLOCKED** until a supported runtime OAuth access token and a real Firebase ID token are available. Firebase connectivity is not claimed merely because configuration fields exist.
+```text
+Build: pnpm install --frozen-lockfile && pnpm run build
+Start: pnpm run start
+```
+
+Set `PORT` from Render, `STORAGE_MODE=firestore`, all public `FIREBASE_*` project variables, and the secret `FIREBASE_SERVICE_ACCOUNT_JSON` in Render Environment Variables. Never paste the service-account value into source control or chat.
+
+## Legal playback
+
+The Internet Archive adapter uses the official public metadata API and only accepts legal public-domain/open-license media. The known regression item is `gov.archives.arc.49737` with the official MP4 source `gov.archives.arc.49737_512kb.mp4`. Naruto metadata may be catalog-tested, but no unauthorized Naruto playback URL is ever returned.
+
+## Tests
+
+```bash
+pnpm install
+pnpm run typecheck
+pnpm run build
+pnpm run test
+pnpm run lint
+pnpm run production-check
+```
+
+No PostgreSQL, Redis, OpenSearch, BullMQ, Docker, Prisma, or manually supplied `FIRESTORE_ACCESS_TOKEN` is used.
