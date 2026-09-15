@@ -1,0 +1,1 @@
+export default [{ignores:['dist/**','node_modules/**']},{files:['**/*.ts'],languageOptions:{parserOptions:{ecmaVersion:'latest',sourceType:'module'},parser:(await import('@typescript-eslint/parser')).default},plugins:{'@typescript-eslint':(await import('@typescript-eslint/eslint-plugin')).default},rules:{'@typescript-eslint/no-explicit-any':'off','no-console':'off'}}];

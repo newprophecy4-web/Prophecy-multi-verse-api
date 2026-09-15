@@ -1,0 +1,3 @@
+export type ProviderCapabilities={search:boolean;metadata:boolean;episodes:boolean;playback:boolean;hls:boolean;mp4:boolean;subtitles:boolean;webhooks:boolean};
+export type ProviderResult={providerId:string;externalId:string;title:string;mediaType:'movie'|'documentary'|'other';licenseStatus:'public-domain'|'open-license'|'authorized'|'unknown';url?:string};
+export interface ProviderAdapter{readonly id:string;readonly name:string;readonly capabilities:ProviderCapabilities; search(query:string):Promise<ProviderResult[]>; getTitle(id:string):Promise<ProviderResult|null>; healthCheck():Promise<{status:'healthy'|'degraded'|'unhealthy';latency:number}>;}

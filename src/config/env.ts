@@ -1,0 +1,2 @@
+import {z} from 'zod';
+export const env=z.object({NODE_ENV:z.enum(['development','test','production']).default('development'),PORT:z.coerce.number().default(3000),DATABASE_URL:z.string().default('postgresql://moviebox:moviebox@localhost:5432/moviebox'),REDIS_URL:z.string().default('redis://localhost:6379'),OPENSEARCH_URL:z.string().default('http://localhost:9200'),JWT_SECRET:z.string().min(16).default('development-only-secret-please-change'),ADMIN_API_KEY:z.string().default('development-admin-key'),CORS_ORIGIN:z.string().default('*')}).parse(process.env);

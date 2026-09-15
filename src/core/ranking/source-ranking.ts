@@ -1,0 +1,3 @@
+export type Source={id:string;providerId:string;licenseStatus:string;availabilityStatus:string;healthScore:number;quality:number;latency:number;languageMatch:number;subtitleMatch:number;priority:number;expiresAt?:Date|null};
+export function rankSource(s:Source,now=new Date()):number{if(!['authorized','public-domain','open-license'].includes(s.licenseStatus)||s.availabilityStatus!=='available'||s.healthScore<30||(s.expiresAt&&s.expiresAt<=now))return -Infinity; return s.healthScore*.3+s.quality*.2+s.languageMatch*.15+s.subtitleMatch*.1+(100-s.priority)*.1+Math.max(0,100-s.latency)/100*.1+(s.expiresAt?0.05:0)}
+export function selectBest(sources:Source[]){return [...sources].sort((a,b)=>rankSource(b)-rankSource(a)).find(x=>rankSource(x)>-Infinity)}

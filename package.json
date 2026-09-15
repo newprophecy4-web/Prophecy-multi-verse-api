@@ -1,0 +1,6 @@
+{
+  "name":"moviebox-backend","version":"1.0.0","private":true,"type":"module",
+  "scripts":{"dev":"tsx watch src/server.ts","build":"tsc -p tsconfig.json","start":"node dist/src/server.js","lint":"eslint .","typecheck":"tsc --noEmit","test":"vitest run","test:unit":"vitest run tests/unit","test:integration":"vitest run tests/integration","test:e2e":"vitest run tests/e2e","db:generate":"prisma generate","db:migrate":"prisma migrate deploy","db:seed":"tsx scripts/seed.ts","reindex":"tsx scripts/reindex.ts","health":"tsx scripts/health-check.ts","production-check":"tsx scripts/production-check.ts"},
+  "dependencies":{"@fastify/cors":"latest","@fastify/helmet":"latest","@fastify/rate-limit":"latest","fastify":"latest","zod":"latest","pino":"latest","@prisma/client":"latest","ioredis":"latest","bullmq":"latest","opensearch":"latest","fastify-plugin":"latest"},
+  "devDependencies":{"@types/node":"latest","@typescript-eslint/eslint-plugin":"latest","@typescript-eslint/parser":"latest","eslint":"latest","tsx":"latest","typescript":"latest","vitest":"latest","prisma":"latest"}
+}

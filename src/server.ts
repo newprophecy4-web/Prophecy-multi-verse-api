@@ -1,0 +1,1 @@
+import {buildApp} from './app.js'; import {env} from './config/env.js'; const app=buildApp(); app.listen({port:env.PORT,host:'0.0.0.0'}).then(()=>app.log.info({port:env.PORT},'moviebox backend listening')).catch(err=>{app.log.error(err);process.exit(1)}); process.on('SIGTERM',()=>app.close()); process.on('SIGINT',()=>app.close());
