@@ -15,4 +15,4 @@ npm run dev
 
 Docker: `docker compose up --build`. API is under `/api/v1`; `/health` is process health and `/ready` is dependency readiness. Admin routes require `x-admin-api-key`.
 
-The repository includes Fastify, Prisma/PostgreSQL schema, Redis/BullMQ/OpenSearch configuration points, source ranking/fallback rules, SSRF-safe policy boundary (no arbitrary URL fetcher), structured logging, rate limiting, security headers, provider capability contracts, tests, Docker, and production checks. External provider terms, licenses, API quotas, credentials, and availability must be reviewed before enabling ingestion or playback.
+The repository includes Fastify, PostgreSQL SQL migrations/PostgreSQL schema, Redis/BullMQ/OpenSearch configuration points, source ranking/fallback rules, SSRF-safe policy boundary (no arbitrary URL fetcher), structured logging, rate limiting, security headers, provider capability contracts, tests, Docker, and production checks. External provider terms, licenses, API quotas, credentials, and availability must be reviewed before enabling ingestion or playback.

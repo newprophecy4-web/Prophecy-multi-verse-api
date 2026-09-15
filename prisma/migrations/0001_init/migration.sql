@@ -1,1 +1,0 @@
--- Apply with Prisma Migrate; schema.prisma is the authoritative model.

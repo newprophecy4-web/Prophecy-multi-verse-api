@@ -7,7 +7,7 @@
 - Ten capability-gated provider adapters and legal-license filtering in source ranking.
 - Canonical title model, aliases, seasons, episodes, releases/sources, provenance schema.
 - Playback ranking and fallback primitives; OpenSearch/Redis/BullMQ integration points.
-- Prisma PostgreSQL schema, Docker Compose services, deterministic unit/integration tests.
+- PostgreSQL SQL migrations PostgreSQL schema, Docker Compose services, deterministic unit/integration tests.
 
 ## Limitations and required pre-production work
 
