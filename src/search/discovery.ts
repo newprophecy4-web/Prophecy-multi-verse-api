@@ -1,0 +1,5 @@
+import {normalizeTitle} from '../core/identity/normalize.js'; import {searchCatalog} from '../storage/catalog.js'; import {cacheProviderResult} from '../sync/sync.service.js'; import {TVMazeMetadataAdapter} from '../providers/tvmaze.js';
+const languageWords=new Set(['ar','arabic','bn','bengali','dub','dubbed','en','english','fr','french','hi','hindi','ja','japanese','ko','korean','sub','subbed','ta','tamil','te','telugu','ur','urdu']);
+const discoveryQuery=(q:string)=>normalizeTitle(q).split(' ').filter(term=>!languageWords.has(term)).join(' ').trim()||q.trim();
+const tvmaze=new TVMazeMetadataAdapter();
+export async function discoverAndCache(q:string,page=1,limit=20){const terms=discoveryQuery(q).split(' ').filter(Boolean);const records=(await tvmaze.search(discoveryQuery(q))).filter(record=>{const hay=normalizeTitle([record.title,record.originalTitle??'',...(record.aliases??[])].join(' '));return terms.every(term=>hay.includes(term))});for(const record of records)await cacheProviderResult(tvmaze,record);return searchCatalog(q,page,limit)}
