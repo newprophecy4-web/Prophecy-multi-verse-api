@@ -1,4 +1,0 @@
-import type {CacheInterface,SearchService,BackgroundJobs,JobKind} from '../core/ports/infrastructure.js'; import {getCache,setCache,invalidateCache,acquireLock} from '../cache/redis.js'; import {ensureSearchIndex,indexTitle,searchTitles,deleteTitleIndex} from '../search/opensearch.js'; import {enqueue} from '../jobs/queues.js';
-export class RedisCache implements CacheInterface { get=getCache; set=setCache; invalidate=invalidateCache; lock=acquireLock; }
-export class OpenSearchService implements SearchService { ensureIndex=ensureSearchIndex; indexTitle=indexTitle; search=searchTitles; deleteTitle=deleteTitleIndex; }
-export class BullMqJobs implements BackgroundJobs { enqueue(kind:JobKind,data:unknown,idempotencyKey?:string){return enqueue(kind==='cleanup'?'cleanup-reconciliation':kind,data,idempotencyKey)} }

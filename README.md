@@ -1,21 +1,53 @@
 # Moviebox Backend
 
-Backend-only, independently written content catalog and legal playback-source service. It does not scrape protected endpoints, bypass DRM/authentication/paywalls, or seed unauthorized streams. PostgreSQL uses `pg` and versioned SQL migrations behind repository ports; Redis, BullMQ, and OpenSearch are optional infrastructure adapters. Firebase/Firestore configuration and a documented model are prepared, but Firebase is not connected in this phase.
+Backend-only local-first catalog and legal playback-source service. It uses a JSON file repository so it starts with only Node.js and no external infrastructure. Firebase is intentionally not implemented in this phase.
 
-## Run
+## Start
 
 ```bash
 cp .env.example .env
 pnpm install
-pnpm run db:migrate
-pnpm run db:status
+pnpm run typecheck
 pnpm run build
-pnpm run test
 pnpm run dev
 ```
 
-Docker: `docker compose up --build`. API is under `/api/v1`; `/health` is process health and `/ready` reports process readiness. Admin requests require `x-admin-api-key`.
+The default data file is `./data/catalog.json`; it is created when a sync writes records. Do not commit the data directory if it contains local user data.
 
-Render deployment is described in `render.yaml`: the web service runs `node dist/src/server.js` and the background worker runs `node dist/src/worker.js`. PostgreSQL/Redis/OpenSearch URLs are supplied as Render environment variables. All `FIREBASE_*` values may remain empty; no Firebase Admin SDK, service-account JSON, or private key is used.
+## Real legal provider sync
 
-The repository includes Fastify, PostgreSQL SQL migrations/schema, parameterized repositories and transactions, provider normalization/idempotent sync, repository/cache/search/job interfaces, Redis cache/locks, BullMQ queues/workers, OpenSearch indexing/search adapters, Firestore-ready model documentation, source ranking/fallback rules, SSRF-safe policy boundary (no arbitrary URL fetcher), structured logging, rate limiting, security headers, provider capability contracts, tests, Docker, Render configuration, and production checks. External provider terms, licenses, API quotas, credentials, and availability must be reviewed before enabling ingestion or playback.
+The Internet Archive adapter uses its official public metadata API and only accepts public-domain records. Run:
+
+```bash
+pnpm run sync:provider -- "public domain"
+```
+
+The command normalizes records, deduplicates by canonical title signals, stores provider provenance, and persists the result to the local JSON repository. It does not invent media URLs. Playback URLs are resolved from an Internet Archive identifier/source through the official public download endpoint only when a legal MP4/WebM file exists.
+
+## API
+
+- `GET /health`
+- `GET /ready`
+- `GET /api/search?q=...`
+- `GET /api/titles/:titleId`
+- `GET /api/titles/:titleId/seasons`
+- `GET /api/titles/:titleId/episodes`
+- `GET /api/episodes/:episodeId`
+- `GET /api/episodes/:episodeId/playback`
+- `GET /api/titles/:titleId/sources`
+- `GET /api/providers`
+- `GET /api/providers/:id/health`
+
+Equivalent `/api/v1` routes remain available for the existing conventions.
+
+## Tests
+
+```bash
+pnpm run typecheck
+pnpm run test
+pnpm run build
+pnpm run lint
+pnpm run production-check
+```
+
+The backend returns `NO_LEGAL_PLAYBACK_SOURCE` when no valid public/legal source exists. It never returns fake or unauthorized streaming URLs. Firebase, Render deployment, and any hosted datastore are future phases and are not claimed as connected here.
