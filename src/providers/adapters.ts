@@ -1,6 +1,9 @@
 import type {ProviderAdapter, ProviderCapabilities, ProviderHealth, ProviderMedia, ProviderResult} from './provider.interface.js';
 import {fetchJson, formatFromUrl, mimeForFormat, type LicenseStatus} from './provider.interface.js';
 import {InternetArchiveAdapter, PrelingerAdapter} from './internet-archive.js';
+import {PeerTubeAdapter} from './peertube.js';
+import {NasaSvsAdapter} from './nasa-svs.js';
+import {LibraryOfCongressAdapter} from './library-of-congress.js';
 
 const unsupportedCapabilities: ProviderCapabilities = {search:false, metadata:false, seasons:false, episodes:false, playback:false, hls:false, mp4:false, webm:false, subtitles:false, audioLanguages:false};
 const unsupported = (id: string, name: string): ProviderAdapter => ({
@@ -36,19 +39,19 @@ export class WikimediaAdapter implements ProviderAdapter {
     const title = await this.getTitle(id); if (!title) return [];
     const data = await fetchJson<WikiInfo>(`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(id)}&prop=imageinfo&iiprop=url|mime|size|extmetadata&format=json`);
     const info = Object.values(data.query?.pages ?? {})[0]?.imageinfo?.[0]; const format = info?.url ? formatFromUrl(info.url) : null; if (!info?.url || !format) return [];
-    const license = rights(info.extmetadata); return [{sourceId:id, format, mimeType:info.mime ?? mimeForFormat(format), url:info.url, licenseStatus:license.status, licenseEvidence:license.evidence, resolution:info.width && info.height ? `${info.width}x${info.height}` : undefined}];
+    const license = rights(info.extmetadata); return [{sourceId:'0', format, mimeType:info.mime ?? mimeForFormat(format), url:info.url, licenseStatus:license.status, licenseEvidence:license.evidence, resolution:info.width && info.height ? `${info.width}x${info.height}` : undefined}];
   }
-  async resolvePlayback(sourceId: string) { return (await this.getMedia(sourceId))[0]?.url ?? null; }
+  async resolvePlayback(sourceId: string) { const slash=sourceId.lastIndexOf('/'); const external=slash>0?sourceId.slice(0,slash):sourceId; return (await this.getMedia(external))[0]?.url ?? null; }
   async getSeasons() { return []; } async getEpisodes() { return []; } async getUpdates() { return []; }
   async healthCheck(): Promise<ProviderHealth> { const started=Date.now(); try { await fetchJson('https://commons.wikimedia.org/w/api.php?action=query&meta=siteinfo&format=json', 5000); return {status:'healthy', latency:Date.now()-started}; } catch { return {status:'degraded', latency:Date.now()-started}; } }
 }
 
 export const providers: Record<string, ProviderAdapter> = {
-  peertube: unsupported('peertube','PeerTube'),
+  peertube: new PeerTubeAdapter(),
   'internet-archive': new InternetArchiveAdapter(),
   wikimedia: new WikimediaAdapter(),
-  'nasa-svs': unsupported('nasa-svs','NASA SVS'),
-  'library-of-congress': unsupported('library-of-congress','Library of Congress'),
+  'nasa-svs': new NasaSvsAdapter(),
+  'library-of-congress': new LibraryOfCongressAdapter(),
   dvids: unsupported('dvids','DVIDS'), noaa: unsupported('noaa','NOAA'), usgs: unsupported('usgs','USGS'),
   'national-archives': unsupported('national-archives','U.S. National Archives'),
   prelinger: new PrelingerAdapter(),

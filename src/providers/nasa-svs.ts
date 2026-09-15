@@ -1,0 +1,14 @@
+import type {ProviderCapabilities, ProviderMedia, ProviderResult, ProviderHealth} from './provider.interface.js';
+import {PublicAdapterBase, fetchJson, mediaFromUrl, rightsFromText} from './public-adapter.js';
+type SVSMedia={url?:string;filename?:string;width?:number;height?:number;media_type?:string}; type SVSItem={id?:number;url?:string;title?:string;description?:string;release_date?:string;thumbnail?:string;main_image?:SVSMedia;media?:SVSMedia[];movies?:SVSMedia[];media_groups?:Array<{items?:Array<{instance?:SVSMedia}>}>};
+type SVSSearch={results?:SVSItem[]};
+const capabilities:ProviderCapabilities={search:true,metadata:true,seasons:false,episodes:false,playback:true,hls:false,mp4:true,webm:true,subtitles:false,audioLanguages:false};
+export class NasaSvsAdapter extends PublicAdapterBase {
+ readonly id='nasa-svs'; readonly name='NASA SVS'; readonly capabilities=capabilities;
+ async search(query:string){const data=await fetchJson<SVSSearch>(`https://svs.gsfc.nasa.gov/api/search/?search=${encodeURIComponent(query)}&limit=20`);return (data.results??[]).filter(x=>x.id&&x.title).map(x=>this.result(x));}
+ private result(x:SVSItem):ProviderResult{return {providerId:this.id,externalId:String(x.id),title:x.title!,description:x.description,year:x.release_date?Number(x.release_date.slice(0,4)):undefined,mediaType:'documentary',licenseStatus:'public-domain',licenseEvidence:'NASA SVS states its content is public domain unless an item notes otherwise',thumbnail:x.thumbnail??x.main_image?.url};}
+ async getTitle(id:string){const data=await fetchJson<SVSItem>(`https://svs.gsfc.nasa.gov/api/${encodeURIComponent(id)}/`);return data.id&&data.title?this.result(data):null;}
+ async getMedia(id:string):Promise<ProviderMedia[]>{const data=await fetchJson<SVSItem>(`https://svs.gsfc.nasa.gov/api/${encodeURIComponent(id)}/`);const rights=rightsFromText('NASA SVS public domain');const items=[...(data.media??[]),...(data.movies??[]),...(data.media_groups??[]).flatMap(group=>(group.items??[]).map(item=>item.instance).filter((item):item is SVSMedia=>Boolean(item)))];return items.filter(m=>m.media_type==='Movie'||Boolean(m.url&&/\.(mp4|webm)(\?|$)/i.test(m.url))).map((m,i)=>m.url?mediaFromUrl(String(i),m.url,rights,{resolution:m.width&&m.height?`${m.width}x${m.height}`:undefined}):null).filter((x):x is ProviderMedia=>Boolean(x));}
+ async resolvePlayback(sourceId:string){const slash=sourceId.lastIndexOf('/');const id=slash>0?sourceId.slice(0,slash):sourceId;const index=Number(slash>0?sourceId.slice(slash+1):'NaN');const media=await this.getMedia(id);return media[Number.isInteger(index)?index:-1]?.url??null;}
+ async healthCheck():Promise<ProviderHealth>{const started=Date.now();try{const response=await fetch('https://svs.gsfc.nasa.gov/api/search/?limit=1',{signal:AbortSignal.timeout(5000)});return {status:response.ok?'healthy':'degraded',latency:Date.now()-started};}catch{return {status:'degraded',latency:Date.now()-started};}}
+}

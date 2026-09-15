@@ -1,0 +1,18 @@
+import type {ProviderCapabilities, ProviderMedia, ProviderResult, ProviderHealth} from './provider.interface.js';
+import {PublicAdapterBase, fetchJson, mediaFromUrl, rightsFromText} from './public-adapter.js';
+
+type PTVideo={id?:number;uuid?:string;shortUUID?:string;name?:string;description?:string;duration?:number;language?:{id?:string};licence?:{label?:string};privacy?:{id?:number};state?:{id?:number};thumbnailPath?:string;thumbnails?:Array<{fileUrl?:string;width?:number;height?:number}>;files?:Array<{fileUrl?:string;playlistUrl?:string;width?:number;height?:number;resolution?:{label?:string}}>;streamingPlaylists?:Array<{playlistUrl?:string;files?:Array<{fileUrl?:string;width?:number;height?:number;resolution?:{label?:string}}>}>;};
+type PTSearch={data?:PTVideo[]};
+const capabilities:ProviderCapabilities={search:true,metadata:true,seasons:false,episodes:false,playback:true,hls:true,mp4:true,webm:false,subtitles:false,audioLanguages:true};
+const instance='https://peertube2.cpy.re';
+const idOf=(video:PTVideo)=>video.uuid??(video.id!==undefined?String(video.id):'');
+const publicVideo=(v:PTVideo)=>Boolean(idOf(v)&&v.name&&v.privacy?.id===1&&v.state?.id===1);
+export class PeerTubeAdapter extends PublicAdapterBase {
+ readonly id='peertube'; readonly name='PeerTube'; readonly capabilities=capabilities;
+ async search(query:string){const data=await fetchJson<PTSearch>(`${instance}/api/v1/search/videos?search=${encodeURIComponent(query)}&start=0&count=20&sort=-match`);return (data.data??[]).filter(publicVideo).map(v=>this.result(v));}
+ private result(v:PTVideo):ProviderResult{const rights=rightsFromText(v.licence?.label);return {providerId:this.id,externalId:`${instance}|${idOf(v)}`,title:v.name!,description:v.description,mediaType:'other',licenseStatus:rights.status,licenseEvidence:rights.evidence,language:v.language?.id,thumbnail:v.thumbnails?.[0]?.fileUrl??v.thumbnailPath};}
+ async getTitle(externalId:string){const [host,id]=externalId.split('|');if(!host||!id)return null;const v=await fetchJson<PTVideo>(`${host}/api/v1/videos/${encodeURIComponent(id)}`);return publicVideo(v)?this.result(v):null;}
+ async getMedia(externalId:string):Promise<ProviderMedia[]>{const [host,id]=externalId.split('|');if(!host||!id)return [];const v=await fetchJson<PTVideo>(`${host}/api/v1/videos/${encodeURIComponent(id)}`);if(!publicVideo(v))return [];const rights=rightsFromText(v.licence?.label);const all=[...(v.files??[]),...(v.streamingPlaylists??[]).flatMap(p=>p.files??[])];return all.map((file,index)=>{const candidate=file as {fileUrl?:string;playlistUrl?:string;width?:number;height?:number;resolution?:{label?:string}};const url=candidate.fileUrl??candidate.playlistUrl;if(!url)return null;return mediaFromUrl(String(index),url,rights,{duration:v.duration,resolution:candidate.width&&candidate.height?`${candidate.width}x${candidate.height}`:candidate.resolution?.label,language:v.language?.id});}).filter((x):x is ProviderMedia=>Boolean(x&&x.licenseStatus!=='unknown'));}
+ async resolvePlayback(sourceId:string){const slash=sourceId.lastIndexOf('/');const external=slash>0?sourceId.slice(0,slash):sourceId;const index=Number(slash>0?sourceId.slice(slash+1):'NaN');const media=await this.getMedia(external);return Number.isInteger(index)?media[index]?.url??null:null;}
+ async healthCheck():Promise<ProviderHealth>{const started=Date.now();try{const response=await fetch(`${instance}/api/v1/videos?count=1`,{signal:AbortSignal.timeout(5000)});return {status:response.ok?'healthy':'degraded',latency:Date.now()-started};}catch{return {status:'degraded',latency:Date.now()-started};}}
+}

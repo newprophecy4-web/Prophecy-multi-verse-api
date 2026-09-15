@@ -1,0 +1,15 @@
+import type {ProviderCapabilities, ProviderMedia, ProviderResult, ProviderHealth} from './provider.interface.js';
+import {PublicAdapterBase, fetchJson, mediaFromUrl, rightsFromText} from './public-adapter.js';
+type LOCItem={id?:string;title?:string;description?:string;date?:string;date_of_event?:string;rights?:string|Array<string>;image_url?:string;resources?:Array<{url?:string;files?:Array<{url?:string;fulltext_derivative?:string;mime?:string;size?:number}>}>;format?:string[];language?:string[]};
+type LOCSearch={results?:LOCItem[]};
+const capabilities:ProviderCapabilities={search:true,metadata:true,seasons:false,episodes:false,playback:true,hls:false,mp4:true,webm:true,subtitles:false,audioLanguages:true};
+const cleanId=(id:string)=>id.replace(/^https?:\/\/www\.loc\.gov\//,'').replace(/\/$/,'');
+export class LibraryOfCongressAdapter extends PublicAdapterBase {
+ readonly id='library-of-congress'; readonly name='Library of Congress'; readonly capabilities=capabilities;
+ async search(query:string){const data=await fetchJson<LOCSearch>(`https://www.loc.gov/film-and-videos/?q=${encodeURIComponent(query)}&fo=json&c=20`);return (data.results??[]).filter(x=>x.id&&x.title).map(x=>this.result(x));}
+ private result(x:LOCItem):ProviderResult{const rights=rightsFromText(Array.isArray(x.rights)?x.rights.join(' '):x.rights);return {providerId:this.id,externalId:x.id!,title:x.title!,description:typeof x.description==='string'?x.description:undefined,year:(x.date??x.date_of_event)?.match(/\d{4}/)?.[0]?Number((x.date??x.date_of_event)!.match(/\d{4}/)![0]):undefined,mediaType:'documentary',licenseStatus:rights.status,licenseEvidence:rights.evidence,language:x.language?.[0],thumbnail:x.image_url};}
+ async getTitle(id:string){const data=await fetchJson<LOCItem>(`https://www.loc.gov/${cleanId(id)}/?fo=json`);return data.id&&data.title?this.result(data):null;}
+ async getMedia(id:string):Promise<ProviderMedia[]>{const data=await fetchJson<LOCItem>(`https://www.loc.gov/${cleanId(id)}/?fo=json`);const rights=rightsFromText(Array.isArray(data.rights)?data.rights.join(' '):data.rights);const urls:Array<{url?:string;mime?:string}>=(data.resources??[]).flatMap(r=>[...(r.files??[]).map(f=>({url:f.url??f.fulltext_derivative,mime:f.mime})),...(r.url?[{url:r.url,mime:undefined}]:[])]);return urls.map((x,i)=>x.url?mediaFromUrl(String(i),x.url,rights,{mimeType:x.mime}):null).filter((x):x is ProviderMedia=>Boolean(x&&x.licenseStatus!=='unknown'));}
+ async resolvePlayback(sourceId:string){const slash=sourceId.lastIndexOf('/');const id=slash>0?sourceId.slice(0,slash):sourceId;const index=Number(slash>0?sourceId.slice(slash+1):'NaN');const media=await this.getMedia(id);return media[Number.isInteger(index)?index:-1]?.url??null;}
+ async healthCheck():Promise<ProviderHealth>{const started=Date.now();try{const response=await fetch('https://www.loc.gov/film-and-videos/?fo=json&c=1',{signal:AbortSignal.timeout(5000)});return {status:response.ok?'healthy':'degraded',latency:Date.now()-started};}catch{return {status:'degraded',latency:Date.now()-started};}}
+}
