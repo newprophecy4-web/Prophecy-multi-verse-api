@@ -28,22 +28,22 @@ The registry preserves this exact priority order: PeerTube, Internet Archive, Wi
 
 | Provider | Search | Metadata | Playback | HLS | MP4 | WebM | License check | Health |
 |---|---:|---:|---:|---:|---:|---:|---|---|
-| PeerTube | Yes | Yes | Yes | Yes | Yes | N/A | License label required | Real instance API check |
-| Internet Archive | Yes | Yes | Yes | N/A | Yes | Yes | Item metadata required | Real metadata check |
-| Wikimedia Commons | Yes | Yes | Yes | N/A | Yes | Yes | Item extmetadata required | Real API check |
-| NASA SVS | Yes | Yes | Yes | N/A | Yes | Yes | NASA public-domain policy and item notes | Real SVS API check |
-| Library of Congress | Yes | Yes | Yes where item resources expose video | N/A | Yes | Yes | Item rights required | Real LOC API check |
-| DVIDS | N/A | N/A | N/A | N/A | N/A | N/A | N/A | `not_implemented` |
-| NOAA | N/A | N/A | N/A | N/A | N/A | N/A | N/A | `not_implemented` |
-| USGS | N/A | N/A | N/A | N/A | N/A | N/A | N/A | `not_implemented` |
-| U.S. National Archives | N/A | N/A | N/A | N/A | N/A | N/A | N/A | `not_implemented` |
-| Prelinger Archives | Archive-derived | Archive-derived | Archive-derived | N/A | Yes | Yes | Item metadata required | Real Archive check |
+| PeerTube | PASS | PASS | PASS | PASS | PASS | N/A | License label required | Real instance API check |
+| Internet Archive | PASS | PASS | PASS | N/A | PASS | PASS | Item metadata required | Real metadata check |
+| Wikimedia Commons | PASS | PASS | PASS | N/A | PASS | PASS | Item extmetadata required | Real API check |
+| NASA SVS | PASS | PASS | PASS | N/A | PASS | PASS | NASA public-domain policy and item notes | Real SVS API check |
+| Library of Congress | PASS | PASS | PASS where item resources expose video | N/A | PASS | PASS | Item rights required | Real LOC API check |
+| DVIDS | PASS when keyed | PASS when keyed | PASS MP4 when keyed | N/A | PASS when keyed | N/A | Public asset record required | PASS when keyed; otherwise NOT_AVAILABLE |
+| NOAA | NOT_AVAILABLE | NOT_AVAILABLE | NOT_AVAILABLE | N/A | N/A | N/A | N/A | NOT_AVAILABLE |
+| USGS | NOT_AVAILABLE | NOT_AVAILABLE | NOT_AVAILABLE | N/A | N/A | N/A | N/A | NOT_AVAILABLE |
+| U.S. National Archives | PASS when keyed | PASS when keyed | PASS where catalog digital objects expose supported media | N/A | PASS where exposed | PASS where exposed | Item use restrictions required | PASS when keyed; otherwise NOT_AVAILABLE |
+| Prelinger Archives | PASS via Archive | PASS via Archive | PASS via Archive | N/A | PASS | PASS | Item metadata required | Real Archive check |
 
-`N/A` is intentional where the provider does not expose that format or the adapter does not claim it. DVIDS, NOAA, USGS, and the U.S. National Archives remain `not_implemented` because this project does not have a stable, unauthenticated, documented public media API configuration for them; their status is not represented as healthy. PeerTube uses the documented public REST API on a public instance and rejects private, restricted, non-local, and unknown-rights videos. NASA SVS uses its documented search API and public-domain media policy. Internet Archive, Wikimedia, Library of Congress, NASA SVS, and PeerTube return sources only after rights and format checks. Prelinger is handled as an Archive-derived adapter and must still pass item-specific rights checks.
+`N/A` is intentional where the provider does not expose that format or the adapter does not claim it. DVIDS and the U.S. National Archives use their official APIs only when the corresponding runtime API key is configured; otherwise they report `not_implemented` rather than pretending to be healthy. NOAA and USGS remain `not_implemented` because their official public sites expose media collections but no stable unauthenticated media API configuration in this backend. PeerTube uses the documented public REST API on a public instance and rejects private, restricted, non-local, and unknown-rights videos. NASA SVS uses its documented search API and public-domain media policy. Internet Archive, Wikimedia, Library of Congress, NASA SVS, DVIDS, and PeerTube return sources only after rights and format checks. Prelinger is handled as an Archive-derived adapter and must still pass item-specific rights checks.
 
 ## API
 
-Public routes include `GET /health`, `GET /ready`, `GET /api/search?q=...`, `GET /api/titles/:id`, `/seasons`, `/episodes`, `/sources`, and `/playback`, `GET /api/episodes/:id`, `/playback`, `GET /api/providers`, and `GET /api/providers/:id/health`. `/api/v1` aliases remain available for search, catalog, playback, and provider routes.
+Public routes include `GET /health`, `GET /ready`, `GET /api/search?q=...`, `GET /api/titles/:id`, `/seasons`, `/episodes`, `/sources`, and `/playback`, `GET /api/episodes/:id`, `/sources`, and `/playback`, `GET /api/providers`, and `GET /api/providers/:id/health`. `/api/v1` aliases remain available for search, catalog, playback, and provider routes.
 
 Playback success has `success: true`, `available: true`, and a `playback` object with `type`, `url`, `mimeType`, quality/resolution, language fields, subtitles, duration, provider, source ID, and rights evidence. When no legal playable source exists, the API returns `success: true`, `available: false`, and `playback: null`.
 

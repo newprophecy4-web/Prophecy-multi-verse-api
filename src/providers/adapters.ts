@@ -4,6 +4,8 @@ import {InternetArchiveAdapter, PrelingerAdapter} from './internet-archive.js';
 import {PeerTubeAdapter} from './peertube.js';
 import {NasaSvsAdapter} from './nasa-svs.js';
 import {LibraryOfCongressAdapter} from './library-of-congress.js';
+import {DvidsAdapter} from './dvids.js';
+import {NationalArchivesAdapter} from './national-archives.js';
 
 const unsupportedCapabilities: ProviderCapabilities = {search:false, metadata:false, seasons:false, episodes:false, playback:false, hls:false, mp4:false, webm:false, subtitles:false, audioLanguages:false};
 const unsupported = (id: string, name: string): ProviderAdapter => ({
@@ -52,7 +54,7 @@ export const providers: Record<string, ProviderAdapter> = {
   wikimedia: new WikimediaAdapter(),
   'nasa-svs': new NasaSvsAdapter(),
   'library-of-congress': new LibraryOfCongressAdapter(),
-  dvids: unsupported('dvids','DVIDS'), noaa: unsupported('noaa','NOAA'), usgs: unsupported('usgs','USGS'),
-  'national-archives': unsupported('national-archives','U.S. National Archives'),
+  dvids: new DvidsAdapter(), noaa: unsupported('noaa','NOAA'), usgs: unsupported('usgs','USGS'),
+  'national-archives': new NationalArchivesAdapter(),
   prelinger: new PrelingerAdapter(),
 };

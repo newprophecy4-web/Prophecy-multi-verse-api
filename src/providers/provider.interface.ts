@@ -40,10 +40,10 @@ export const formatFromUrl = (url: string): MediaFormat | null => {
   return null;
 };
 
-export async function fetchJson<T>(url: string, timeoutMs = Number(process.env.PROVIDER_TIMEOUT_MS ?? 8000)): Promise<T> {
+export async function fetchJson<T>(url: string, timeoutMs = Number(process.env.PROVIDER_TIMEOUT_MS ?? 8000), extraHeaders: Record<string,string> = {}): Promise<T> {
   for (let attempt=0; attempt<2; attempt++) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: 'application/json', 'user-agent': 'Prophecy-Multi-Verse-API/1.0 (legal-media-catalog)' } });
+      const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: 'application/json', 'user-agent': 'Prophecy-Multi-Verse-API/1.0 (legal-media-catalog)', ...extraHeaders } });
       if (!response.ok) {
         const error=Object.assign(new Error(`Provider request failed: ${response.status}`), {status: response.status});
         if (response.status<500 || response.status===501) throw error;
