@@ -1,0 +1,3 @@
+export interface CacheInterface { get<T>(key:string):Promise<T|null>; set(key:string,value:unknown,ttlSeconds:number):Promise<boolean>; invalidate(...keys:string[]):Promise<boolean>; lock(key:string,ttlSeconds?:number):Promise<boolean>; }
+export interface SearchService { ensureIndex():Promise<boolean>; indexTitle(title:unknown):Promise<boolean>; search(query:string,page?:number,limit?:number):Promise<unknown[]>; deleteTitle(id:string):Promise<boolean>; }
+export type JobKind='provider-sync'|'source-health'|'search-index'|'cleanup'; export interface BackgroundJobs { enqueue(kind:JobKind,data:unknown,idempotencyKey?:string):Promise<unknown>; }
