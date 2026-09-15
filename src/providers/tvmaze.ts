@@ -3,7 +3,7 @@ import type {ProviderAdapter,ProviderCapabilities,ProviderResult} from './provid
 type TVMazeShow={id:number;name?:string;type?:string;language?:string;genres?:string[];premiered?:string|null;summary?:string|null;image?:{medium?:string;original?:string}|null;officialSite?:string|null;url?:string};
 type TVMazeSearch={score?:number;show?:TVMazeShow};
 
-const capabilities:ProviderCapabilities={search:true,metadata:true,episodes:false,playback:false,hls:false,mp4:false,subtitles:false,webhooks:false};
+const capabilities:ProviderCapabilities={search:true,metadata:true,seasons:true,episodes:true,playback:false,hls:false,mp4:false,webm:false,subtitles:false,audioLanguages:false};
 const yearOf=(date?:string|null)=>date&&/^\d{4}/.test(date)?Number(date.slice(0,4)):undefined;
 export class TVMazeMetadataAdapter implements ProviderAdapter{
  readonly id='tvmaze'; readonly name='TVMaze'; readonly capabilities=capabilities;
