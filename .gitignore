@@ -1,8 +1,17 @@
 node_modules
 dist
 .env
+.env.*
+!.env.example
 coverage
 *.log
 
 # local runtime data
 data/
+
+# Firebase and Google Cloud credentials
+*service-account*.json
+*firebase-admin*.json
+*credentials*.json
+*.pem
+*.key
