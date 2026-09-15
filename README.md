@@ -28,7 +28,7 @@ The registry preserves this exact priority order: PeerTube, Internet Archive, Wi
 
 | Provider | Search | Metadata | Playback | HLS | MP4 | WebM | License check | Health |
 |---|---:|---:|---:|---:|---:|---:|---|---|
-| PeerTube | PASS | PASS | PASS | PASS | PASS | N/A | License label required | Real instance API check |
+| PeerTube | PASS | PASS | PASS | PASS (master first) | PASS | N/A | Explicit license label required | Real instance API check |
 | Internet Archive | PASS | PASS | PASS | N/A | PASS | PASS | Item metadata required | Real metadata check |
 | Wikimedia Commons | PASS | PASS | PASS | N/A | PASS | PASS | Item extmetadata required | Real API check |
 | NASA SVS | PASS | PASS | PASS | N/A | PASS | PASS | NASA public-domain policy and item notes | Real SVS API check |
@@ -39,7 +39,7 @@ The registry preserves this exact priority order: PeerTube, Internet Archive, Wi
 | U.S. National Archives | PASS when keyed | PASS when keyed | PASS where catalog digital objects expose supported media | N/A | PASS where exposed | PASS where exposed | Item use restrictions required | PASS when keyed; otherwise NOT_AVAILABLE |
 | Prelinger Archives | PASS via Archive | PASS via Archive | PASS via Archive | N/A | PASS | PASS | Item metadata required | Real Archive check |
 
-`N/A` is intentional where the provider does not expose that format or the adapter does not claim it. DVIDS and the U.S. National Archives use their official APIs only when the corresponding runtime API key is configured; otherwise they report `not_implemented` rather than pretending to be healthy. NOAA and USGS remain `not_implemented` because their official public sites expose media collections but no stable unauthenticated media API configuration in this backend. PeerTube uses the documented public REST API on a public instance and rejects private, restricted, non-local, and unknown-rights videos. NASA SVS uses its documented search API and public-domain media policy. Internet Archive, Wikimedia, Library of Congress, NASA SVS, DVIDS, and PeerTube return sources only after rights and format checks. Prelinger is handled as an Archive-derived adapter and must still pass item-specific rights checks.
+`N/A` is intentional where the provider does not expose that format or the adapter does not claim it. DVIDS and the U.S. National Archives use their official APIs only when the corresponding runtime API key is configured; otherwise they report `not_implemented` rather than pretending to be healthy. NOAA and USGS remain `not_implemented` because their official public sites expose media collections but no stable unauthenticated media API configuration in this backend. PeerTube uses the documented public REST API, preserves the federated HTTPS origin in its external ID, verifies public/published state when search state is incomplete, recognizes only explicit supported license labels, and prioritizes the official HLS master playlist before MP4. `PEERTUBE_INSTANCES` may contain comma-separated HTTPS instance origins; origins returned by verified official PeerTube metadata are also retained for that process. NASA SVS uses its documented search API and public-domain media policy. Internet Archive, Wikimedia, Library of Congress, NASA SVS, DVIDS, and PeerTube return sources only after rights and format checks. Prelinger is handled as an Archive-derived adapter and must still pass item-specific rights checks.
 
 ## API
 
