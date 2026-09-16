@@ -6,9 +6,11 @@ export type LocalSeason={seasonId:string;seasonNumber:number;episodes:LocalEpiso
 export type LocalEpisode={episodeId:string;seasonNumber:number;episodeNumber:number;title:string;description?:string;airDate?:string;duration?:number;thumbnail?:string;sources:LocalSource[]};
 type Store={titles:LocalTitle[]};
 const file=()=>process.env.LOCAL_STORE_FILE??path.resolve('data/catalog.json'); const empty=():Store=>({titles:[]});
+export function episodeIdCandidates(id:string):Array<string|number>{const value=id.trim();const values:Array<string|number>=[value];const numeric=Number(value);if(Number.isSafeInteger(numeric)&&String(numeric)===value)values.push(numeric);return values;}
+export function episodeIdsEqual(stored:unknown,id:string){return episodeIdCandidates(id).some(candidate=>typeof candidate==='number'?stored===candidate:String(stored)===candidate);}
 export async function readStore():Promise<Store>{try{return JSON.parse(await readFile(file(),'utf8')) as Store}catch{return empty()}}
 export async function writeStore(store:Store){await mkdir(path.dirname(file()),{recursive:true});await writeFile(file(),JSON.stringify(store,null,2),'utf8')}
 export async function searchLocal(q:string,page=1,limit=20){const s=await readStore();const term=q.toLowerCase();const all=s.titles.filter(t=>[t.title,t.originalTitle??'',...t.alternateTitles].join(' ').toLowerCase().includes(term));return {total:all.length,results:all.slice((page-1)*limit,page*limit)}}
 export async function getTitle(id:string){return (await readStore()).titles.find(t=>t.titleId===id)??null}
 export async function upsertTitle(title:LocalTitle){const s=await readStore();const i=s.titles.findIndex(t=>t.titleId===title.titleId);if(i>=0)s.titles[i]={...s.titles[i],...title};else s.titles.push(title);await writeStore(s);return title}
-export async function findEpisode(id:string){for(const t of (await readStore()).titles)for(const season of t.seasons)for(const e of season.episodes)if(e.episodeId===id)return {title:t,episode:e};return null}
+export async function findEpisode(id:string){for(const t of (await readStore()).titles)for(const season of t.seasons)for(const e of season.episodes)if(episodeIdsEqual(e.episodeId,id))return {title:t,episode:{...e,episodeId:String(e.episodeId)}};return null}
